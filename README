@@ -1,0 +1,65 @@
+抓取公务员模拟考的答案以及解析
+
+1、对于中公机构
+
+获取试题：
+POST https://tiku.eoffcn.com/apiv3/mock/exercise/getMockPaperReport HTTP/1.1
+Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoiNzY1ODE5NiIsInBob25lIjoiMTg5Njg5OTU4ODEiLCJjcmVhdGVfdGltZSI6MTYyMDQ0MTEzNSwidXBkYXRlX3RpbWUiOjE2MjA0NDExMzUsInN5c3RlbSI6IjI5IiwicGxhdGZvcm0iOiJBbmRyb2lkIiwidmVyc2lvbiI6IjQuMTIuMCIsInNka192ZXJzaW9uIjoiNC4xMi4wIiwibmlja25hbWUiOiIxODk2ODk5NTg4MSIsImF2YXRhciI6IiIsImdlbmRlciI6ImYiLCJzc29faWQiOjIwNjMyOTkyLCJ3ZWlib19pZCI6IiIsInFxX2lkIjoiIiwid2VpeGluX2lkIjoiIiwid2VpYm9fbmlja25hbWUiOiIiLCJxcV9uaWNrbmFtZSI6IiIsIndlaXhpbl9uaWNrbmFtZSI6IiIsImxvZ2luX3R5cGUiOiJwaG9uZSIsInVzZXJfZnJvbSI6MTUsImNvZGUiOiJHQ1RTVCIsImlhdCI6MTYyMDQ0MTEzNSwibmJmIjoxNjIwNDQxMTM1LCJleHAiOjE2NTE5NzcxMzV9.TQp3Y4KD-o_X_8TL-LNeKCyQ0ZIMsIXWsrAZLETDm4A
+Referer: https://tiku.eoffcn.com/apiv3/
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 164
+Host: tiku.eoffcn.com
+Connection: Keep-Alive
+Accept-Encoding: gzip
+User-Agent: okhttp/4.2.2
+
+record_sub_id=2685017&mock_subject_id=12034&position_id=&channel=15&version=4.12.0&appid=zgjiaoyu&platform=Android&format=form&sign=14af3b7ccb71cd5f5c2c8b552aa106c8
+
+获得这次模拟考说有的试题的id
+
+{
+  "retcode": 0,
+  "message": "试题获取成功！",
+  "data": {
+    "mock_subject_id": 12034,
+    "mock_id": 7871,
+    "mock_title": "2022国考模考大赛（第1季）",
+    "mock_sub_title": "省级",
+    "mock_subject_title": "行测",
+    "title": "2022国考模考大赛省级试卷-2月27日场",
+    "total_question_num": 135,
+    "list": [
+      {
+        "block_id": 88268,
+        "block_name": "常识判断",
+        "block_name_tiny": "常识",
+        "question_pattern": 1,
+        "correct_num": 0,
+        "duration": 5,
+        "total": 20,
+        "show_score": 0,
+        "score": 0,
+        "full_score": 14,
+        "enabled_score": 14,
+        "objective_total": 20,
+        "avg_correct_rate": -1,
+        "subjective_avg_score": -1,
+        "list": [
+          {
+            "question_id": 856437,
+            "question_number": 1,
+            "form": 1,
+            "is_signed": 0,
+            "is_correct": 0,
+            "answered": 1,
+            "user_answer": "3561004",
+            "type": 2,
+            "duration": 5,
+            "rubric": "常识判断"
+          },
+          ...
+         ]
+        }
+       ]
+
+block_name: 常识判断 言语理解与表达 数量关系 判断推理 资料分析
