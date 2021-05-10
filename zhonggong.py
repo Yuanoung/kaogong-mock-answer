@@ -1,7 +1,8 @@
 # -*- coding: utf-8
 import json
+import re
 import time
-
+from io import BytesIO
 import requests
 
 from docx import Document
@@ -38,23 +39,15 @@ User-Agent: okhttp/4.2.2"""
 
     r = session.post(MockPaperReportURL, data=data)
     print(r.status_code)
-    # print(r.text)
 
     raw_all_problem_ids = json.loads(r.text)
+    print(raw_all_problem_ids['data']['mock_title'])
     ids = []
     for raw_list in raw_all_problem_ids['data']['list']:
         for raw in raw_list["list"]:
             ids.append(raw['question_id'])
 
     output(ids)
-
-    # data2 = {'userId': '7658196', 'recordId': '2685017', 'origin': '3',
-    #          'questionIds': '856437,1072831,1072832,1072833,1072834,1072835,1072836', 'examId': '71', 'channel': '15',
-    #          'submit_time': '0', 'product': '3', 'appid': 'zgjiaoyu', 'version': '4.12.0', 'platform': 'Android',
-    #          'format': 'form', 'sign': '4a951b04ee2b83aa43d13eb4ab085afd'}
-    # r = session.post(QuestionDetail, data=data2)
-    # print(r.status_code)
-    # print(r.text)
 
 
 def getDetail(ids):
@@ -85,6 +78,12 @@ def subject(subjects):
     return ' '.join(s['first_name'] for s in subjects)
 
 
+def download(url):
+    r = session.get(url)
+    print(r.status_code)
+    return BytesIO(r.content)
+
+
 def output(ids):
     ans = []
     document = Document()
@@ -93,13 +92,27 @@ def output(ids):
         data = json.loads(text)
         for ph in data["data"]:
             p1 = document.add_paragraph()
-            p1.add_run('%s 分值：%s 归类：%s\n' % (problem_number, ph['score'], subject(ph['subject']))).bold = True
+            p1.add_run('%s     分值：%s    归类：%s\n' % (problem_number, ph['score'], subject(ph['subject']))).bold = True
             ans.append(correct(ph['choices']))
-            text = '正确答案：%s\n%s\n' % (correct(ph['choices']), ph["explanation"])
+            text = '正确答案：%s\n' % (correct(ph['choices']))
             p1.add_run(text)
+
+            explanation = ph['explanation'].replace('<br>', '\n')
+            if '<img' in explanation:
+                urls = re.findall('<img src="(.*?)".*?>', explanation)
+                texts = re.split('<img.*?>', explanation)
+                for t, u in zip(texts[1:], urls):
+                    r = p1.add_run()
+                    inline_shape = r.add_picture(download(u))
+                    inline_shape.height = int(inline_shape.height * 0.4)
+                    inline_shape.width = int(inline_shape.width * 0.5)
+                    p1.add_run(t)
+                    time.sleep(0.5)
+            else:
+                p1.add_run('%s\n' % explanation)
             p1.style = 'Normal'
             problem_number += 1
-        time.sleep(1)
+        time.sleep(2)
 
     i = 1
     p1 = document.add_paragraph()
