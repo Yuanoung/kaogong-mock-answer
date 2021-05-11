@@ -3,31 +3,34 @@ import re
 import time
 from io import BytesIO
 import requests
+import uuid
 
 from docx import Document
+
+
+def init_client():
+    client = requests.session()
+    raw_headers = """Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoiNzY1ODE5NiIsInBob25lIjoiMTg5Njg5OTU4ODEiLCJjcmVhdGVfdGltZSI6MTYyMDQ0MTEzNSwidXBkYXRlX3RpbWUiOjE2MjA0NDExMzUsInN5c3RlbSI6IjI5IiwicGxhdGZvcm0iOiJBbmRyb2lkIiwidmVyc2lvbiI6IjQuMTIuMCIsInNka192ZXJzaW9uIjoiNC4xMi4wIiwibmlja25hbWUiOiIxODk2ODk5NTg4MSIsImF2YXRhciI6IiIsImdlbmRlciI6ImYiLCJzc29faWQiOjIwNjMyOTkyLCJ3ZWlib19pZCI6IiIsInFxX2lkIjoiIiwid2VpeGluX2lkIjoiIiwid2VpYm9fbmlja25hbWUiOiIiLCJxcV9uaWNrbmFtZSI6IiIsIndlaXhpbl9uaWNrbmFtZSI6IiIsImxvZ2luX3R5cGUiOiJwaG9uZSIsInVzZXJfZnJvbSI6MTUsImNvZGUiOiJHQ1RTVCIsImlhdCI6MTYyMDQ0MTEzNSwibmJmIjoxNjIwNDQxMTM1LCJleHAiOjE2NTE5NzcxMzV9.TQp3Y4KD-o_X_8TL-LNeKCyQ0ZIMsIXWsrAZLETDm4A
+    Referer: http://tiku.eoffcn.com/apiv3/
+    Content-Type: application/x-www-form-urlencoded
+    Accept-Encoding: gzip
+    User-Agent: okhttp/4.2.2"""
+    for s in raw_headers.split("\n"):
+        key, val = list(map(str.strip, s.split(": ")))
+        client.headers[key] = val
+
+    return client
 
 
 class Paper(object):
     MockPaperReportURL = 'http://tiku.eoffcn.com/apiv3/mock/exercise/getMockPaperReport'
 
-    def __init__(self, record_sub_id, mock_subject_id, user_id='7658196'):
+    def __init__(self, client, process, record_sub_id, mock_subject_id, user_id='7658196'):
         self._record_sub_id = record_sub_id
         self._mock_subject_id = mock_subject_id
         self._user_id = user_id
-        self._client = self._init_client()
-
-    def _init_client(self):
-        client = requests.session()
-        raw_headers = """Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoiNzY1ODE5NiIsInBob25lIjoiMTg5Njg5OTU4ODEiLCJjcmVhdGVfdGltZSI6MTYyMDQ0MTEzNSwidXBkYXRlX3RpbWUiOjE2MjA0NDExMzUsInN5c3RlbSI6IjI5IiwicGxhdGZvcm0iOiJBbmRyb2lkIiwidmVyc2lvbiI6IjQuMTIuMCIsInNka192ZXJzaW9uIjoiNC4xMi4wIiwibmlja25hbWUiOiIxODk2ODk5NTg4MSIsImF2YXRhciI6IiIsImdlbmRlciI6ImYiLCJzc29faWQiOjIwNjMyOTkyLCJ3ZWlib19pZCI6IiIsInFxX2lkIjoiIiwid2VpeGluX2lkIjoiIiwid2VpYm9fbmlja25hbWUiOiIiLCJxcV9uaWNrbmFtZSI6IiIsIndlaXhpbl9uaWNrbmFtZSI6IiIsImxvZ2luX3R5cGUiOiJwaG9uZSIsInVzZXJfZnJvbSI6MTUsImNvZGUiOiJHQ1RTVCIsImlhdCI6MTYyMDQ0MTEzNSwibmJmIjoxNjIwNDQxMTM1LCJleHAiOjE2NTE5NzcxMzV9.TQp3Y4KD-o_X_8TL-LNeKCyQ0ZIMsIXWsrAZLETDm4A
-        Referer: http://tiku.eoffcn.com/apiv3/
-        Content-Type: application/x-www-form-urlencoded
-        Accept-Encoding: gzip
-        User-Agent: okhttp/4.2.2"""
-        for s in raw_headers.split("\n"):
-            key, val = list(map(str.strip, s.split(": ")))
-            client.headers[key] = val
-
-        return client
+        self._client = client
+        self._process = process
 
     def run(self):
         payload = {
@@ -62,6 +65,7 @@ class Process(object):
         self._client = client
         self._record_id = record_id
         self._user_id = user_id
+        self._name = None
 
     def get_detail(self, ids):
         data = {'userId': self._user_id,
@@ -91,7 +95,22 @@ class Process(object):
 
         return True
 
-    def process(self, ids):
+    def _correct(self, choices):
+        for i, c in enumerate(choices):
+            if c['is_correct']:
+                return 'ABCD'[i]
+        print("错误选项")
+        return 'E'
+
+    def download(self, url):
+        r = self._client.get(url)
+        print(url[20:], r.status_code)
+        return BytesIO(r.content)
+
+    def subject(self, subjects):
+        return ' '.join(s['first_name'] for s in subjects)
+
+    def process(self, ids, name):
         ans = []
         document = Document()
         problem_number = 1
@@ -100,9 +119,10 @@ class Process(object):
             for ph in data["data"]:
                 p1 = document.add_paragraph()
                 p1.add_run(
-                    '%s     分值：%s    归类：%s\n' % (problem_number, ph['score'], subject(ph['subject']))).bold = True
-                ans.append(correct(ph['choices']))
-                text = '正确答案：%s\n' % (correct(ph['choices']))
+                    '%s     分值：%s    归类：%s\n' % (problem_number, ph['score'], self.subject(ph['subject']))
+                ).bold = True
+                ans.append(self._correct(ph['choices']))
+                text = '正确答案：%s\n' % (self._correct(ph['choices']))
                 p1.add_run(text)
 
                 explanation = ph['explanation'].replace('<br>', '\n')
@@ -111,7 +131,7 @@ class Process(object):
                     texts = re.split('<img.*?>', explanation)
                     for t, u in zip(texts[1:], urls):
                         r = p1.add_run()
-                        inline_shape = r.add_picture(download(u))
+                        inline_shape = r.add_picture(self.download(u))
                         inline_shape.height = int(inline_shape.height * 0.4)
                         inline_shape.width = int(inline_shape.width * 0.5)
                         p1.add_run(t)
@@ -127,4 +147,18 @@ class Process(object):
         for index in range(0, len(ans), 5):
             p1.add_run('%s-%s %s    ' % (i, i + 4, ''.join(ans[index:index + 5]))).bold = True
             i += 5
-        document.save('demo.docx')
+
+        if name:
+            document.save(name + '.docx')
+        else:
+            document.save(str(uuid.uuid4().hex) + '.docx')
+        return True
+
+def read_config():
+    with open("./config.json", 'r', encoding='UTF-8') as fp:
+        return json.load(fp)
+
+if __name__ == '__main__':
+    client = init_client()
+    paper = Paper(client, record_sub_id, mock_subject_id)
+    process = Process(client, record_sub_id)
