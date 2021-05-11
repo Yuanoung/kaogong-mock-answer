@@ -42,7 +42,7 @@ class Paper(object):
                 'appid': 'zgjiaoyu',
                 'platform': 'Android',
                 'format': 'form',
-                'sign': '14af3b7ccb71cd5f5c2c8b552aa106c8'
+                'sign': '64018318e691e99cff36437891383268'
             }
 
             r = self._client.post(self.MockPaperReportURL, data=payload)
@@ -52,7 +52,6 @@ class Paper(object):
 
             # 处理返回结果
             raw_all_problem_ids = json.loads(r.text)
-            print(raw_all_problem_ids)
             mock_title = raw_all_problem_ids['data']['mock_title']  # 第几期等信息
             print(mock_title)
             ids = []
@@ -61,7 +60,7 @@ class Paper(object):
                     ids.append(raw['question_id'])
 
             self._process(ids, record_sub_id, mock_title)
-            return True
+            print(mock_title, 'done')
 
 
 class Process(object):
@@ -85,7 +84,7 @@ class Process(object):
                 'version': '4.12.0',
                 'platform': 'Android',
                 'format': 'form',
-                'sign': '4a951b04ee2b83aa43d13eb4ab085afd'}
+                'sign': '64018318e691e99cff36437891383268'}
 
         err_cnt = 0
         for i in range(0, len(ids), 7):
@@ -109,7 +108,7 @@ class Process(object):
 
     def download(self, url):
         r = self._client.get(url)
-        print(url[20:], r.status_code)
+        print(url[30:], r.status_code)
         return BytesIO(r.content)
 
     def subject(self, subjects):
@@ -119,7 +118,7 @@ class Process(object):
         ans = []
         document = Document()
         problem_number = 1
-        for text in self.get_detail(ids[129:], record_id):
+        for text in self.get_detail(ids, record_id):
             data = json.loads(text)
             for ph in data["data"]:
                 p1 = document.add_paragraph()
@@ -134,13 +133,14 @@ class Process(object):
                 if '<img' in explanation:
                     urls = re.findall('<img src="(.*?)".*?>', explanation)
                     texts = re.split('<img.*?>', explanation)
+                    p1.add_run(texts[0])
                     for t, u in zip(texts[1:], urls):
                         r = p1.add_run()
                         inline_shape = r.add_picture(self.download(u))
                         inline_shape.height = int(inline_shape.height * 0.4)
                         inline_shape.width = int(inline_shape.width * 0.5)
                         p1.add_run(t)
-                        time.sleep(0.5)
+                        time.sleep(1)
                 else:
                     p1.add_run('%s\n' % explanation)
                 p1.style = 'Normal'
