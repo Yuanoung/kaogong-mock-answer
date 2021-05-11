@@ -2,3 +2,5 @@
 *.gif
 format.json
 *.docx
+config.json
+*.bak

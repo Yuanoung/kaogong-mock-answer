@@ -63,3 +63,18 @@ record_sub_id=2685017&mock_subject_id=12034&position_id=&channel=15&version=4.12
        ]
 
 block_name: 常识判断 言语理解与表达 数量关系 判断推理 资料分析
+
+
+config.json配置
+
+{
+  "data": [
+    {
+      "record_sub_id": "XXX",
+      "mock_subject_id": "XXXX"
+    },
+    ....
+  ],
+  "user_id": "...",
+  "auth": "..........."
+}
